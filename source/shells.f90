@@ -8,7 +8,7 @@ module Shell
         private:: readLinksList,fillNeighbours,fillIndexNumber,fillCoordinates,fillFlags
 
         type :: irregArray
-                integer, allocatable :: vector(:,:)
+                integer, allocatable :: vector(:,:,:)
         end type irregArray
 
 
@@ -41,6 +41,7 @@ module Shell
                         call initializePolyLists()
                         call getArbitaryPolyhedra(self%basisIco,self%basisDod)
                         call fillFlags(self)
+                        call fillNeighbours(self)
                 end subroutine initializeNodes
 
                 subroutine readLinksList(self)
@@ -49,17 +50,31 @@ module Shell
 
                 subroutine fillNeighbours(self)
                         class(Nodes), intent(inout) :: self
+                        integer,parameter :: shapeFirstShell(4) = shape(icosahedronList)
+                        integer,parameter :: shapeSecondShell(4) = shape(dodecahedronList)
+                        integer :: numOfPairs(2)
+                        integer :: k(2,shapeFirstShell(3))
+                        numofPairs = (/shapeFirstShell(3)*shapeFirstShell(2),shapeSecondShell(3)*shapeSecondShell(2)/)                        
                         allocate(self%neighbours(0:self%numberOfShells*16-1))
-
-                        do i=0,self%numberOfShells*16-1
-                                if (mod(i,2) == 1) then
-                                        allocate(self%neighbours(i)%vector(0:2,0:5))
-                                else if (mod(i,2) == 0) then
-                                        allocate(self%neighbours(i)%vector(0:2,0:10))
+                        k = reshape((/-2,-1,-1,1,1,2/),(/2,shapeFirstShell(3)/))
+                        do i=0,self%numberOfShells*8-1
+                                if (mod(self%pairIndexList(i,0),2) == 0) then  
+                                        print *,i                              
+                                        allocate(self%neighbours(i)%vector(0:2,0:1,0:numOfPairs(1)-1))
+                                        do j=0,shapeFirstShell(3)-1
+                                                self%neighbours(i)%vector(0,0,(shapeFirstShell(2))*j : (shapeFirstShell(2))*(j + 1) - 1) = self%pairIndexList(i,0)+k(1,j+1)
+                                                self%neighbours(i)%vector(0,1,(shapeFirstShell(2))*j : (shapeFirstShell(2))*(j + 1) - 1) = self%pairIndexList(i,0)+k(2,j+1)
+                                        end do
+                                        do j = 0,shapeFirstShell(3)-1
+                                                do m = 0, shapeFirstShell(1)-1
+                                                        self%neighbours(i)%vector(1,m,(shapeFirstShell(2))*j : (shapeFirstShell(2))*(j + 1) - 1) = self%neighboursFirstShell(m+1,:,j+1,self%pairIndexList(i,1)+1)
+                                                        self%neighbours(i)%vector(2,m,(shapeFirstShell(2))*j : (shapeFirstShell(2))*(j + 1) - 1) = self%conjFlagFirstShell(m+1,:,j+1,self%pairIndexList(i,1)+1)        
+                                                end do
+                                        end do
+                                else if (mod(self%pairIndexList(i,0),2) == 1) then
+                                        allocate(self%neighbours(i)%vector(0:2,0:1,0:numOfPairs(2)-1))
                                 end if
-
                         end do
-
                 end subroutine fillNeighbours
 
                 subroutine fillIndexNumber(self)
@@ -143,6 +158,8 @@ program main
   use Shell
   implicit none
   integer :: n,ik
+  integer :: tempAr(2)
+  character :: ar(0:2) = (/'n','l','f'/)
   type(Nodes) :: node
   n = 10
   node%numberOfShells = n
@@ -152,30 +169,41 @@ program main
 !  do ik = 0,8*n-1
 !    print *,node%pairIndexList(ik,:)
 ! end do
- print *,'neighbours for icosahedron:'
- do ik = 1,5
- print *,icosahedronList(:,ik,1,2)
-enddo
-
-print *,'neighbours for icosahedron:'
-do ik = 1,5
-print *,node%neighboursFirstShell(:,ik,1,2)
-enddo
-!
-!print *,'neighbours for dodecahedron:'
-!do ik = 1,3
-!print *,dodecahedronList(:,ik,2,1)
+! print *,'neighbours for icosahedron:'
+! do ik = 1,5
+! print *,icosahedronList(:,ik,1,2)
 !enddo
-print *, shape(node%conjFlagFirstShell)
-print *,'conjugated flag:'
-
-do n = 1,10
-        print *,n
-        print *,''
-        do ik = 1,3
-                print *,node%conjFlagSecondShell(:,ik,2,n)
+!
+!print *,'neighbours for icosahedron:'
+!do ik = 1,5
+!print *,node%neighboursFirstShell(:,ik,1,2)
+!enddo
+!!
+!!print *,'neighbours for dodecahedron:'
+!!do ik = 1,3
+!!print *,dodecahedronList(:,ik,2,1)
+!!enddo
+!print *, shape(node%conjFlagFirstShell)
+!print *,'conjugated flag:'
+!
+!do n = 1,10
+!        print *,n
+!        print *,''
+!        do ik = 1,3
+!                print *,node%conjFlagSecondShell(:,ik,2,n)
+!        enddo
+!        print *,''
+!enddo
+!print *, icosahedronList(2,:,2,2)
+!
+!
+do ik = 0,2
+        print *,'look at ',ar(ik)
+        do n = 0,14
+                tempAr = node%neighbours(16)%vector(ik,:,n)
+                print *,tempAr
         enddo
         print *,''
 enddo
-print *, icosahedronList(2,:,2,2)
+
 end program main
