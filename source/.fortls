@@ -1,0 +1,6 @@
+{
+  "source_dirs": [ "./"],
+  "pp_suffixes": [".f03", ".f90"],
+  "lowercase_intrinsics": true,
+  "debug_log": true
+} 
