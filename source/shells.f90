@@ -5,7 +5,8 @@
 !
 module Shell
         use Neighbours_lists
-        private:: readLinksList,fillNeighbours,fillIndexNumber,fillCoordinates,fillFlags
+        private :: readLinksList,fillNeighbours,fillIndexNumber,fillCoordinates,fillFlags
+        public :: getCoordinates,getNeighboursCoordinates
 
         type :: irregArray
                 integer, allocatable :: vector(:,:,:)
@@ -30,13 +31,14 @@ module Shell
                 procedure, pass(self) :: fillIndexNumber
                 procedure, pass(self) :: fillCoordinates
                 procedure, pass(self) :: fillFlags
+                procedure, pass(self) :: getCoordinates
         end type Nodes
 
         contains
                 subroutine initializeNodes(self)
                         class(Nodes), intent(inout) :: self
-                        allocate(self%basisIco(0:2,0:5))
-                        allocate(self%basisDod(0:2,0:9))
+                        allocate(self%basisIco(0:5,0:2))
+                        allocate(self%basisDod(0:9,0:2))
                         call fillIndexNumber(self)
                         call initializePolyLists()
                         call getArbitaryPolyhedra(self%basisIco,self%basisDod)
@@ -54,12 +56,12 @@ module Shell
                         integer,parameter :: shapeSecondShell(4) = shape(dodecahedronList)
                         integer :: numOfPairs(2)
                         integer :: k(2,shapeFirstShell(3))
-                        numofPairs = (/shapeFirstShell(3)*shapeFirstShell(2),shapeSecondShell(3)*shapeSecondShell(2)/)                        
+                        numofPairs = (/shapeFirstShell(3)*shapeFirstShell(2),shapeSecondShell(3)*shapeSecondShell(2)/)
                         allocate(self%neighbours(0:self%numberOfShells*16-1))
                         k = reshape((/-2,-1,-1,1,1,2/),(/2,shapeFirstShell(3)/))
                         do i=0,self%numberOfShells*8-1
-                                if (mod(self%pairIndexList(i,0),2) == 0) then  
-                                                                     
+                                if (mod(self%pairIndexList(i,0),2) == 0) then
+
                                         allocate(self%neighbours(i)%vector(0:2,0:1,0:numOfPairs(1)-1))
                                         do j=0,shapeFirstShell(3)-1
                                                 self%neighbours(i)%vector(0,0,(shapeFirstShell(2))*j : (shapeFirstShell(2))*(j + 1) - 1) = self%pairIndexList(i,0)+k(1,j+1)
@@ -68,7 +70,7 @@ module Shell
                                         do j = 0,shapeFirstShell(3)-1
                                                 do m = 0, shapeFirstShell(1)-1
                                                         self%neighbours(i)%vector(1,m,(shapeFirstShell(2))*j : (shapeFirstShell(2))*(j + 1) - 1) = self%neighboursFirstShell(m+1,:,j+1,self%pairIndexList(i,1)+1)
-                                                        self%neighbours(i)%vector(2,m,(shapeFirstShell(2))*j : (shapeFirstShell(2))*(j + 1) - 1) = self%conjFlagFirstShell(m+1,:,j+1,self%pairIndexList(i,1)+1)        
+                                                        self%neighbours(i)%vector(2,m,(shapeFirstShell(2))*j : (shapeFirstShell(2))*(j + 1) - 1) = self%conjFlagFirstShell(m+1,:,j+1,self%pairIndexList(i,1)+1)
                                                 end do
                                         end do
                                 else if (mod(self%pairIndexList(i,0),2) == 1) then
@@ -80,12 +82,12 @@ module Shell
                                         do j = 0,shapeFirstShell(3)-1
                                                 do m = 0, shapeFirstShell(1)-1
                                                         self%neighbours(i)%vector(1,m,(shapeSecondShell(2))*j : (shapeSecondShell(2))*(j + 1) - 1) = self%neighboursSecondShell(m+1,:,j+1,self%pairIndexList(i,1)+1)
-                                                        self%neighbours(i)%vector(2,m,(shapeSecondShell(2))*j : (shapeSecondShell(2))*(j + 1) - 1) = self%conjFlagSecondShell(m+1,:,j+1,self%pairIndexList(i,1)+1)        
+                                                        self%neighbours(i)%vector(2,m,(shapeSecondShell(2))*j : (shapeSecondShell(2))*(j + 1) - 1) = self%conjFlagSecondShell(m+1,:,j+1,self%pairIndexList(i,1)+1)
                                                 end do
                                         end do
                                 end if
                         end do
-                        
+
                 end subroutine fillNeighbours
 
 
@@ -168,6 +170,29 @@ module Shell
 
 
 
+                function getCoordinates(self,kNum) result (k)
+                        class(Nodes), intent(in) :: self
+                        integer, intent(in) :: kNum
+                        !real, intent(in) :: lambda(2)
+                        real :: k(0:2)
+                        integer :: n,l
+                        n = self%pairIndexList(kNum,0)
+                        l = self%pairIndexList(kNum,1)
+
+
+                        if (mod(n,2) == 0) then
+                                k = g**n*lambda(0)*self%basisIco(l,:)
+                        else if (mod(n,2) == 1) then
+                                k = g**n*lambda(1)*self%basisDod(l,:)
+                        end if
+
+                        !k = merge(g**n*lambda(0)*self%basisIco(:,l),g**n*lambda(1)*self%basisDod(:,l),mod(n,2) == 0)
+                end function getCoordinates
+
+
+
+
+
 end module Shell
 
 program main
@@ -221,5 +246,10 @@ do ik = 0,2
         enddo
         print *,''
 enddo
+do ik = 0,14
+        tempAr = node%pairIndexList(ik,:)
+        print *, tempAr
+        print *, node%getCoordinates(ik)
+end do
 
 end program main
