@@ -54,8 +54,6 @@ module Shell
                         integer,parameter :: shapeSecondShell(4) = shape(dodecahedronList)
                         integer :: numOfPairs(2)
                         integer :: k(2,shapeFirstShell(3))
-                        integer, allocatable :: checkVector(:,:,:)
-                        integer, allocatable :: mask(:,:,:)
                         numofPairs = (/shapeFirstShell(3)*shapeFirstShell(2),shapeSecondShell(3)*shapeSecondShell(2)/)                        
                         allocate(self%neighbours(0:self%numberOfShells*16-1))
                         k = reshape((/-2,-1,-1,1,1,2/),(/2,shapeFirstShell(3)/))
