@@ -54,12 +54,14 @@ module Shell
                         integer,parameter :: shapeSecondShell(4) = shape(dodecahedronList)
                         integer :: numOfPairs(2)
                         integer :: k(2,shapeFirstShell(3))
+                        integer, allocatable :: checkVector(:,:,:)
+                        integer, allocatable :: mask(:,:,:)
                         numofPairs = (/shapeFirstShell(3)*shapeFirstShell(2),shapeSecondShell(3)*shapeSecondShell(2)/)                        
                         allocate(self%neighbours(0:self%numberOfShells*16-1))
                         k = reshape((/-2,-1,-1,1,1,2/),(/2,shapeFirstShell(3)/))
                         do i=0,self%numberOfShells*8-1
                                 if (mod(self%pairIndexList(i,0),2) == 0) then  
-                                        print *,i                              
+                                                                     
                                         allocate(self%neighbours(i)%vector(0:2,0:1,0:numOfPairs(1)-1))
                                         do j=0,shapeFirstShell(3)-1
                                                 self%neighbours(i)%vector(0,0,(shapeFirstShell(2))*j : (shapeFirstShell(2))*(j + 1) - 1) = self%pairIndexList(i,0)+k(1,j+1)
@@ -73,9 +75,25 @@ module Shell
                                         end do
                                 else if (mod(self%pairIndexList(i,0),2) == 1) then
                                         allocate(self%neighbours(i)%vector(0:2,0:1,0:numOfPairs(2)-1))
+                                        do j=0,shapeSecondShell(3)-1
+                                                self%neighbours(i)%vector(0,0,(shapeSecondShell(2))*j : (shapeSecondShell(2))*(j + 1) - 1) = self%pairIndexList(i,0)+k(1,j+1)
+                                                self%neighbours(i)%vector(0,1,(shapeSecondShell(2))*j : (shapeSecondShell(2))*(j + 1) - 1) = self%pairIndexList(i,0)+k(2,j+1)
+                                        end do
+                                        do j = 0,shapeFirstShell(3)-1
+                                                do m = 0, shapeFirstShell(1)-1
+                                                        self%neighbours(i)%vector(1,m,(shapeSecondShell(2))*j : (shapeSecondShell(2))*(j + 1) - 1) = self%neighboursSecondShell(m+1,:,j+1,self%pairIndexList(i,1)+1)
+                                                        self%neighbours(i)%vector(2,m,(shapeSecondShell(2))*j : (shapeSecondShell(2))*(j + 1) - 1) = self%conjFlagSecondShell(m+1,:,j+1,self%pairIndexList(i,1)+1)        
+                                                end do
+                                        end do
                                 end if
                         end do
+                        
                 end subroutine fillNeighbours
+
+
+
+
+
 
                 subroutine fillIndexNumber(self)
                         class(Nodes), intent(inout) :: self
@@ -199,8 +217,8 @@ program main
 !
 do ik = 0,2
         print *,'look at ',ar(ik)
-        do n = 0,14
-                tempAr = node%neighbours(16)%vector(ik,:,n)
+        do n = 0,8
+                tempAr = node%neighbours(8)%vector(ik,:,n)
                 print *,tempAr
         enddo
         print *,''
