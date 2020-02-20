@@ -5,6 +5,7 @@ module Neighbours_lists
         real,parameter :: alpha = asin(phi/sqrt(3.)) - acos(phi/sqrt(phi+2.))
         real,parameter :: beta = atan(2*phi*phi)
         real,parameter :: gamma = PI/2.-atan(0.5)
+        real,parameter :: lambda(0:1) =(/sqrt(sqrt(5.)/3.),1./) 
 
         public :: initializePolyLists, getArbitaryPolyhedra
         private :: getArbitaryIcosahedron,getArbitaryDodecahedron
@@ -46,26 +47,27 @@ contains
         end subroutine getArbitaryPolyhedra
 
         subroutine getArbitaryIcosahedron(k)
-                real, intent(inout) :: k(0:2,0:5)
+                real, intent(inout) :: k(0:5,0:2)
                 real :: theta(0:5)
                 real :: psi(0:5)
                 theta(0) = 0.
                 theta(1:5) = gamma
                 psi(0:1) = 0
                 psi(2:5) = (/2.,4.,6.,8./)*PI/5.
-                k = reshape((/sin(theta)*cos(psi),sin(theta)*sin(psi),cos(theta)/),(/3,6/))
+                k = reshape((/sin(theta)*cos(psi),sin(theta)*sin(psi),cos(theta)/),(/6,3/))
         end subroutine getArbitaryIcosahedron
 
 
         subroutine getArbitaryDodecahedron(k)
-                real, intent(inout) :: k(0:2,0:9)
+                real, intent(inout) :: k(0:9,0:2)
                 real :: theta(0:9)
                 real :: psi(0:9)
                 theta(:4) = alpha
                 theta(4:9) = beta
                 psi(:4) = (/1.,3.,5.,7.,9./)*PI/5.
                 psi(5:9) = psi(:4)
-                k = reshape((/sin(theta)*cos(psi),sin(theta)*sin(psi),cos(theta)/),(/3,10/))
+                k = reshape((/sin(theta)*cos(psi),sin(theta)*sin(psi),cos(theta)/),(/10,3/))
+                !print ()
         end subroutine getArbitaryDodecahedron
 
 end module Neighbours_lists
