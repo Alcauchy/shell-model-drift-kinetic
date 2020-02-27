@@ -32,6 +32,7 @@ module Shell
                 procedure, pass(self) :: fillCoordinates
                 procedure, pass(self) :: fillFlags
                 procedure, pass(self) :: getCoordinates
+                procedure, pass(self) :: getNeighboursCoordinates
         end type Nodes
 
         contains
@@ -181,14 +182,77 @@ module Shell
 
 
                         if (mod(n,2) == 0) then
-                                k = g**n*lambda(0)*self%basisIco(l,:)
+                                k = g**real(n)*lambda(0)*self%basisIco(l,:)
                         else if (mod(n,2) == 1) then
-                                k = g**n*lambda(1)*self%basisDod(l,:)
+                                k = g**real(n)*lambda(1)*self%basisDod(l,:)
                         end if
 
                         !k = merge(g**n*lambda(0)*self%basisIco(:,l),g**n*lambda(1)*self%basisDod(:,l),mod(n,2) == 0)
                 end function getCoordinates
 
+                function getNeighboursCoordinates(self,kNum) result(k)
+                        class(Nodes), intent(in) :: self
+                        integer, intent(in) :: kNum
+                        integer :: i,j,extraElem
+                        integer, allocatable :: sizeOfNeigh(:)
+                        integer,allocatable :: n(:,:),l(:,:),f(:,:),newN(:,:),newL(:,:),newF(:,:)
+                        logical,allocatable :: mask(:)
+                        logical,allocatable :: lmask(:)
+                        real, allocatable :: k(:,:,:)
+
+                        allocate(sizeOfNeigh,SOURCE = shape(self%neighbours(kNum)%vector))
+                        allocate(n, SOURCE = self%neighbours(kNum)%vector(0,:,:))
+                        allocate(l, SOURCE = self%neighbours(kNum)%vector(1,:,:))
+                        allocate(f, SOURCE = self%neighbours(kNum)%vector(2,:,:))
+
+                        allocate(mask(sizeOfNeigh(3)))
+
+                        mask = merge(.true.,.false.,(n(1,:) < 0).or.(n(2,:) < 0))
+                        extraElem = sizeOfNeigh(3)-count(mask)
+
+                        if (extraElem /= 0) then
+                                allocate(newN(2,extraElem))
+                                allocate(newL(2,extraElem))
+                                allocate(newF(2,extraElem))
+                                newN(1,:) = pack(n(1,:),.not.mask)
+                                newN(2,:) = pack(n(2,:),.not.mask)
+                                newL(1,:) = pack(l(1,:),.not.mask)
+                                newL(2,:) = pack(l(2,:),.not.mask)
+                                newF(1,:) = pack(f(1,:),.not.mask)
+                                newF(2,:) = pack(f(2,:),.not.mask)
+                                deallocate(n)
+                                deallocate(l)
+                                deallocate(f)
+                                allocate(n, SOURCE = newN)
+                                allocate(l, SOURCE = newL)
+                                allocate(f, SOURCE = newF)
+                                sizeOfNeigh(3) = extraElem
+                                !do i = 1,extraElem
+                                !        print *,n(:,i)
+                                !enddo
+                        end if
+                        allocate(k(0:2,0:sizeOfNeigh(2)-1,0:sizeOfNeigh(3)-1))
+
+                        !newN(2,:) = pack(n(2,:),mask)
+                        !if (max) ==
+                        !print*,'n ',(n(:,4:6))
+                        do j = 0,sizeOfNeigh(3)-1
+                                !print*,(n(:,j+1))
+                                do i = 0,sizeOfNeigh(2)-1
+
+                                        if (mod(n(i+1,j+1),2) == 0) then
+                                                k(:,i,j) = g**(n(i+1,j+1))*lambda(0)*self%basisIco(l(i+1,j+1),:)
+                                        else if (mod(n(i+1,j+1),2) == 1) then
+                                                k(:,i,j) = g**(n(i+1,j+1))*lambda(1)*self%basisDod(l(i+1,j+1),:)
+                                        end if
+                                        k(:,i,j) = merge(-k(:,i,j),k(:,i,j),f(i+1,j+1) == 1)
+                                        !k(:,:,j) = merge(-k(:,:,j),k(:,:,j),f(:,j+1) == 1)
+                                end do
+                        end do
+
+!
+
+                end function getNeighboursCoordinates
 
 
 
@@ -198,11 +262,15 @@ end module Shell
 program main
   use Shell
   implicit none
-  integer :: n,ik
+  integer :: jk,ik,kk,n
   integer :: tempAr(2)
+  real :: coords(3)
+  integer, allocatable :: sizeAr(:)
+  integer :: hi
   character :: ar(0:2) = (/'n','l','f'/)
+  real, allocatable :: neighAr(:,:,:)
   type(Nodes) :: node
-  n = 10
+  n = 130
   node%numberOfShells = n
   call node%initializeNodes()
 !  print *,shape(node%pairIndexList)
@@ -238,18 +306,40 @@ program main
 !print *, icosahedronList(2,:,2,2)
 !
 !
-do ik = 0,2
-        print *,'look at ',ar(ik)
-        do n = 0,8
-                tempAr = node%neighbours(8)%vector(ik,:,n)
-                print *,tempAr
-        enddo
-        print *,''
-enddo
-do ik = 0,14
+!print *, node%pairIndexList(8,:)
+!do ik = 0,2
+!        print *,'look at ',ar(ik)
+!        do jk = 0,8
+!                tempAr = node%neighbours(8)%vector(ik,:,jk)
+!                print *,tempAr
+!        enddo
+!        print *,''
+!enddo
+do ik = 0,10
+!        !print *,''
         tempAr = node%pairIndexList(ik,:)
-        print *, tempAr
-        print *, node%getCoordinates(ik)
+!        !print *, tempAr
+
+        allocate(neighAr, SOURCE = node%getNeighboursCoordinates(ik))
+        allocate(sizeAr, SOURCE = shape(node%getNeighboursCoordinates(ik)))
+        hi = sizeAr(3)
+        !print *,shape(neighAr)
+        coords = node%getCoordinates(ik)
+
+        !print *,''
+        do jk = 1,hi
+
+                do kk = 1,2
+                        !print *, neighAr(:,kk,jk)
+                enddo
+                !print *, (neighAr(:,1,jk)+neighAr(:,2,jk))+coords
+                if (minval(abs(neighAr(:,1,jk)+neighAr(:,2,jk)+coords))>0.01) then
+                        print *,ik,jk,'!'
+                endif
+                !print *,''
+        enddo
+        deallocate(neighAr)
+        deallocate(sizeAr)
 end do
 
 end program main

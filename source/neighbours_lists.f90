@@ -63,7 +63,7 @@ contains
                 real :: theta(0:9)
                 real :: psi(0:9)
                 theta(:4) = alpha
-                theta(4:9) = beta
+                theta(5:9) = beta
                 psi(:4) = (/1.,3.,5.,7.,9./)*PI/5.
                 psi(5:9) = psi(:4)
                 k = reshape((/sin(theta)*cos(psi),sin(theta)*sin(psi),cos(theta)/),(/10,3/))

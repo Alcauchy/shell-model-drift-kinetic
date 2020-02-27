@@ -1,7 +1,7 @@
 F90 = ifort#gfortran
-FFLAGS = -check all#-fcheck=all -ffree-line-length-none
+FFLAGS = -check all -r8#-fcheck=all -ffree-line-length-none
 %.o: %.f90
-	$(F90) $< $(FFLAGS) -g -c  -o $@ 
+	$(F90) $< $(FFLAGS) -c  -o $@ 
 
 shellmodel: constants.o  neighbours_lists.o shells.o
 	$(F90) -o shellmodel constants.o  neighbours_lists.o shells.o
