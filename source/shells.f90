@@ -195,7 +195,7 @@ module Shell
                         integer, intent(in) :: kNum
                         integer :: i,j,extraElem
                         integer, allocatable :: sizeOfNeigh(:)
-                        integer,allocatable :: n(:,:),l(:,:),f(:,:),newN(:,:),newL(:,:)
+                        integer,allocatable :: n(:,:),l(:,:),f(:,:),newN(:,:),newL(:,:),newF(:,:)
                         logical,allocatable :: mask(:)
                         logical,allocatable :: lmask(:)
                         real, allocatable :: k(:,:,:)
@@ -213,18 +213,23 @@ module Shell
                         if (extraElem /= 0) then
                                 allocate(newN(2,extraElem))
                                 allocate(newL(2,extraElem))
+                                allocate(newF(2,extraElem))
                                 newN(1,:) = pack(n(1,:),.not.mask)
                                 newN(2,:) = pack(n(2,:),.not.mask)
                                 newL(1,:) = pack(l(1,:),.not.mask)
                                 newL(2,:) = pack(l(2,:),.not.mask)
+                                newF(1,:) = pack(f(1,:),.not.mask)
+                                newF(2,:) = pack(f(2,:),.not.mask)
                                 deallocate(n)
                                 deallocate(l)
+                                deallocate(f)
                                 allocate(n, SOURCE = newN)
                                 allocate(l, SOURCE = newL)
+                                allocate(f, SOURCE = newF)
                                 sizeOfNeigh(3) = extraElem
-                                do i = 1,extraElem
-                                        print *,n(:,i)
-                                enddo
+                                !do i = 1,extraElem
+                                !        print *,n(:,i)
+                                !enddo
                         end if
                         allocate(k(0:2,0:sizeOfNeigh(2)-1,0:sizeOfNeigh(3)-1))
 
