@@ -22,6 +22,7 @@ module Shell
                 integer, allocatable :: neighboursFirstShell(:,:,:,:),neighboursSecondShell(:,:,:,:)
                 real, allocatable :: coordinates(:,:)                                                                               ! list of nodes' coordinates
                 type(irregArray), allocatable :: neighbours(:)
+                type(irregArray), allocatable :: interactingNodesFlattened(:)
 
 
         contains
@@ -33,6 +34,8 @@ module Shell
                 procedure, pass(self) :: fillFlags
                 procedure, pass(self) :: getCoordinates
                 procedure, pass(self) :: getNeighboursCoordinates
+                procedure, pass(self) :: getInterNodesFlat
+                procedure, pass(self) :: getInterNodesCoords
         end type Nodes
 
         contains
@@ -45,6 +48,8 @@ module Shell
                         call getArbitaryPolyhedra(self%basisIco,self%basisDod)
                         call fillFlags(self)
                         call fillNeighbours(self)
+                        call fillCoordinates(self)
+                        call getInterNodesFlat(self)
                 end subroutine initializeNodes
 
                 subroutine readLinksList(self)
@@ -123,6 +128,10 @@ module Shell
 
                 subroutine fillCoordinates(self)
                         class(Nodes), intent(inout) :: self
+                        allocate(self%coordinates(3,0:self%numberOfShells*16-1))
+                        do i = 0,self%numberOfShells*8-1
+                                self%coordinates(:,i) = getCoordinates(self,i)
+                        end do
                 end subroutine fillCoordinates
 
                 subroutine fillFlags(self)
@@ -166,6 +175,65 @@ module Shell
 
 
                 end subroutine fillFlags
+                
+                subroutine getInterNodesFlat(self)
+                        class(Nodes), intent(inout) :: self
+                        integer :: extraElem
+                        integer, allocatable :: sizeOfNeigh(:)
+                        integer,allocatable :: n(:,:),l(:,:),f(:,:),newN(:,:),newL(:,:),newF(:,:)
+                        logical,allocatable :: mask(:)
+                        integer :: flatNum(2)
+                        
+                        allocate(self%interactingNodesFlattened(0:self%numberOfShells*16-1))
+                        
+                        do kNum = 0,self%numberOfShells*16-1
+                                allocate(sizeOfNeigh,SOURCE = shape(self%neighbours(kNum)%vector))
+                                allocate(n, SOURCE = self%neighbours(kNum)%vector(0,:,:))
+                                allocate(l, SOURCE = self%neighbours(kNum)%vector(1,:,:))
+                                allocate(f, SOURCE = self%neighbours(kNum)%vector(2,:,:))
+                                
+                                allocate(mask(sizeOfNeigh(3)))
+                                
+                                mask = merge(.true.,.false.,(n(1,:) < 0).or.(n(2,:) < 0))
+                                extraElem = sizeOfNeigh(3)-count(mask)
+                                if (extraElem /= 0) then
+                                        allocate(newN(2,extraElem))
+                                        allocate(newL(2,extraElem))
+                                        allocate(newF(2,extraElem))
+                                        newN(1,:) = pack(n(1,:),.not.mask)
+                                        newN(2,:) = pack(n(2,:),.not.mask)
+                                        newL(1,:) = pack(l(1,:),.not.mask)
+                                        newL(2,:) = pack(l(2,:),.not.mask)
+                                        newF(1,:) = pack(f(1,:),.not.mask)
+                                        newF(2,:) = pack(f(2,:),.not.mask)
+                                        deallocate(n)
+                                        deallocate(l)
+                                        deallocate(f)
+                                        allocate(n, SOURCE = newN)
+                                        allocate(l, SOURCE = newL)
+                                        allocate(f, SOURCE = newF)
+                                        sizeOfNeigh(3) = extraElem
+                                        deallocate(newN)
+                                        deallocate(newL)
+                                        deallocate(newF)
+                                        
+                                
+                                end if
+                                deallocate(mask)
+                                allocate(self%interactingNodesFlattened(kNum)%vector(0:1,0:1,sizeofNeigh(3)))
+                                do j = 0,sizeOfNeigh(3)-1
+                                        flatNum = floor(real(n(:,j+1)/2.)) * 16 + mod(n(:,j+1),2) * 6 + l(:,j+1)
+                                        self%interactingNodesFlattened(kNum)%vector(0,0:1,j+1) = flatNum(:)
+                                        self%interactingNodesFlattened(kNum)%vector(1,0:1,j+1) = f(:,j+1)
+                                         
+                                end do
+                                deallocate(sizeOfNeigh)
+                                deallocate(n)
+                                deallocate(l)
+                                deallocate(f)
+                        end do
+                        
+                end subroutine getInterNodesFlat
 
 
 
@@ -253,8 +321,38 @@ module Shell
 !
 
                 end function getNeighboursCoordinates
-
-
+                        
+                
+                function getInterNodesCoords(self, kNum) result(k)
+                        class(Nodes), intent(in) :: self
+                        integer, intent(in) :: kNum
+                        real, allocatable :: k(:,:,:)
+                        integer, allocatable :: sizeOfNeigh(:)
+                        integer, allocatable :: interactingNodes(:,:,:)
+                        
+                        allocate(sizeOfNeigh,SOURCE = shape(self%interactingNodesFlattened(kNum)%vector))
+                        allocate(interactingNodes, SOURCE = self%interactingNodesFlattened(kNum)%vector)
+                        allocate(k(0:2,0:sizeOfNeigh(2)-1,0:sizeOfNeigh(3)-1))
+                        do i = 0,sizeOfNeigh(3)-1
+                                do j = 0,sizeOfNeigh(2)-1
+                                        k(:,j,i) = self%coordinates(:,interactingNodes(0,j,i+1))
+                                        k(:,j,i) = merge(-k(:,j,i),k(:,j,i),interactingNodes(1,j,i+1) == 1)
+                                        !k(:,j,i) = 1.0
+                                end do
+                                        
+                        end do 
+                        
+                        !do i = 0,sizeOfNeigh(3)-1
+                        !        do j = 0,sizeOfNeigh(2)-1
+                        !        k(:,j,i) = getCoordinates(self,interactingNodes(0,j,i+1))
+                        !        k(:,j,i) = merge(-k(:,j,i),k(:,j,i),interactingNodes(1,j,i+1) == 1)
+                        !        end do
+                        
+                        !end do 
+                                
+                        
+                end function getInterNodesCoords
+                
 
 
 end module Shell
@@ -268,7 +366,7 @@ program main
   integer, allocatable :: sizeAr(:)
   integer :: hi
   character :: ar(0:2) = (/'n','l','f'/)
-  real, allocatable :: neighAr(:,:,:)
+  real, allocatable :: neighAr(:,:,:),neighAr1(:,:,:)
   type(Nodes) :: node
   n = 130
   node%numberOfShells = n
@@ -315,30 +413,37 @@ program main
 !        enddo
 !        print *,''
 !enddo
-do ik = 0,10
+do ik = 0,130
 !        !print *,''
         tempAr = node%pairIndexList(ik,:)
 !        !print *, tempAr
 
         allocate(neighAr, SOURCE = node%getNeighboursCoordinates(ik))
+        allocate(neighAr1, SOURCE = node%getInterNodesCoords(ik))
         allocate(sizeAr, SOURCE = shape(node%getNeighboursCoordinates(ik)))
         hi = sizeAr(3)
         !print *,shape(neighAr)
         coords = node%getCoordinates(ik)
-
+        
         !print *,''
         do jk = 1,hi
 
-                do kk = 1,2
+                !do kk = 1,2
                         !print *, neighAr(:,kk,jk)
-                enddo
+                !enddo
                 !print *, (neighAr(:,1,jk)+neighAr(:,2,jk))+coords
                 if (minval(abs(neighAr(:,1,jk)+neighAr(:,2,jk)+coords))>0.01) then
                         print *,ik,jk,'!'
                 endif
+                do kk = 0,2
+                        if (neighAr(kk+1,1,jk)/=neighAr1(kk+1,1,jk)) then
+                                print *,ik,jk,'!'
+                        endif
+                enddo
                 !print *,''
         enddo
         deallocate(neighAr)
+        deallocate(neighAr1)
         deallocate(sizeAr)
 end do
 
