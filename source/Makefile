@@ -4,7 +4,7 @@ L_LIBS = /usr/local/hdf5-1.10.6/lib
 INC=$(DIR1) 
 
 F9X = /usr/local/hdf5-1.10.6/bin/h5fc#ifort#gfortran#
-FFLAGS = #-check all  -r8 -I${INC} -L${L_LIBS} #-fcheck=all -ffree-line-length-none#
+FFLAGS = -check all  -r8 -I${INC} -L${L_LIBS} #-fcheck=all -ffree-line-length-none#
 
 #VPATH = 
 #vpath %.mod ../include

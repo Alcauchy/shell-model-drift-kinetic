@@ -93,7 +93,6 @@ module Shell
                                         end do
                                 end if
                         end do
-
                 end subroutine fillNeighbours
 
 
@@ -232,7 +231,6 @@ module Shell
                                 deallocate(l)
                                 deallocate(f)
                         end do
-                        
                 end subroutine getInterNodesFlat
 
 
@@ -254,7 +252,6 @@ module Shell
                         else if (mod(n,2) == 1) then
                                 k = g**real(n)*lambda(1)*self%basisDod(l,:)
                         end if
-
                         !k = merge(g**n*lambda(0)*self%basisIco(:,l),g**n*lambda(1)*self%basisDod(:,l),mod(n,2) == 0)
                 end function getCoordinates
 
@@ -317,9 +314,6 @@ module Shell
                                         !k(:,:,j) = merge(-k(:,:,j),k(:,:,j),f(:,j+1) == 1)
                                 end do
                         end do
-
-!
-
                 end function getNeighboursCoordinates
                         
                 
@@ -349,8 +343,6 @@ module Shell
                         !        end do
                         
                         !end do 
-                                
-                        
                 end function getInterNodesCoords
                 
 

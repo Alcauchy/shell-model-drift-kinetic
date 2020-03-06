@@ -95,5 +95,6 @@ do ik = 0,n
 end do
 
 call writeSpaceConfig(node)
+        print *,node%coordinates(:,0)
 
 end program main
