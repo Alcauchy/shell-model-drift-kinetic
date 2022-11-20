@@ -1,0 +1,41 @@
+{
+	"system":{
+		"electromagnetic": true,
+		"beta": 1.0,
+		"number_of_species": 2,
+		"mass": [0.0005446623093681918, 1.0],
+		"density": [1.0, 1.0],
+		"charge": [-1.0, 1.0],
+		"temperature": [1.0,1.0],
+		"dissipation_m": 0.1,
+		"dissipation_k": 0.1,
+		"force": 0
+	},
+
+	"geometry":{
+		"filename":"spaceConfiguration6.h5",
+		"n_hermite_modes": 100
+	},
+
+	"save_file":{
+		"save": true,
+		"filename" :"linear_check_3.h5",
+		"stride": 10
+	},
+
+	"initial": {
+		"from_file": true,
+		"filename":"linear_check_2.h5"
+	},
+
+	"simulation_parameters":{
+		"dt": 0.0001,
+		"dump": 500,
+		"progress_bar": true,
+		"timesteps": 500000,
+		"linear_flag": true,
+		"nonlinear_flag": false,
+		"dissipation_flag": false
+	}
+
+}
